@@ -1,0 +1,61 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: {{ template "cassandra-master.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ template "cassandra-master.name" . }}
+    chart: {{ template "cassandra-master.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ template "cassandra-master.fullname" . }} 
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "cassandra-master.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ .Values.image.command }}
+          env:
+            - name: {{ .Values.env.podIP }} 
+              valueFrom:
+                fieldRef:
+                  fieldPath: {{ .Values.env.podIPValue }} 
+            - name: {{ .Values.env.clusterName }} 
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configmap.name }} 
+                  key: {{ .Values.configmap.key }} 
+          ports:
+            - containerPort: 7000 
+            - containerPort: 7199 
+            - containerPort: 9042 
+            - containerPort: 9160 
+          volumeMounts:
+            - name: {{ .Values.pv.name }} 
+              mountPath: "{{ .Values.pv.mountPath }}"
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: {{ .Values.pv.name }} 
+          persistentVolumeClaim:
+            claimName: {{ .Values.pv.claimName }} 
