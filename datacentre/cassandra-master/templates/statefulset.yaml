@@ -1,7 +1,7 @@
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: {{ template "cassandra-master.fullname" . }}
+  name: {{ .Chart.Name }}
   namespace: {{ .Values.namespace }}
   labels:
     app: {{ template "cassandra-master.name" . }}
@@ -9,7 +9,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  serviceName: {{ template "cassandra-master.fullname" . }} 
+  serviceName: {{ .Chart.Name }} 
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
