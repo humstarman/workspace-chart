@@ -1,0 +1,61 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet 
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ template "zookeeper.name" . }}
+    chart: {{ template "zookeeper.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ .Chart.Name }}
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "zookeeper.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ .Values.image.command }}
+          env:
+            - name: {{ .Values.env.podIP.k }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: {{ .Values.env.podIP.v }}
+            - name: {{ .Values.env.tries }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.configmap.name }}
+                  key: {{ .Values.configmap.tries }}
+            - name: {{ .Values.env.dscv.k }}
+              value: {{ .Values.env.dscv.v }}
+            - name: {{ .Values.env.nNodes.k }}
+              value: "{{ .Values.env.nNodes.v }}"
+          volumeMounts:
+            - name: {{ .Values.pv.name }}
+              mountPath: "{{ .Values.pv.mountPath }}"
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: {{ .Values.pv.name }}
+          persistentVolumeClaim:
+          claimName: {{ .Values.pv.claimName }}
